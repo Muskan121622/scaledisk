@@ -1,0 +1,24 @@
+# Build outputs (recreated inside the image; never ship local artifacts into the context)
+**/bin/
+**/obj/
+**/*.user
+**/.vs/
+**/.vscode/
+
+# Local runtime state & compose volumes
+**/TestResults/
+**/*.trx
+docker-data/
+postgres-data/
+redis-data/
+kafka-data/
+
+# Secrets & env overrides must never be baked into an image layer
+**/.env
+**/*.pem
+**/appsettings.*.local.json
+
+# VCS / CI noise
+.git/
+.gitignore
+.github/

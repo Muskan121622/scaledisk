@@ -1,0 +1,13 @@
+== sla-breach : http://localhost:5102 ==
+  [PASS] ticket created + assigned (breach notification needs a recipient)  (create=201 assign=200)
+  [PASS] SLA deadline stamped at creation (future dueAt)  (dueAt=2026-10-04T11:27:40.0673001Z)
+  [PASS] not breached at creation  (slaBreached=False)
+  [PASS] deadline moved into the past (ticket is now overdue)  (dueAt=2026-10-04T10:52:42.180004Z)
+  [PASS] SLA scanner marked the overdue ticket SlaBreached=true
+  [PASS] Outbox: sla.breached event published to Kafka  (published=1)
+  [PASS] Consumer created sla.breached NOTIFICATION for the assignee  (count=1)
+  [PASS] breach notification visible in the assignee feed (realtime durable via REST)
+  [PASS] scanner is idempotent: exactly ONE breach notification (not re-escalated)  (count=1)
+
+[PASS] SLA breach -> scanner -> event -> notification (idempotent)  (9 checks)
+

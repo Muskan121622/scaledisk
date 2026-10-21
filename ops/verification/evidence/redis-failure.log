@@ -1,0 +1,15 @@
+== redis-failure : http://localhost:5102 ==
+  [PASS] baseline create with Redis UP works (201)  (HTTP 201)
+  stopping Redis (simulating a cache outage)...
+  [PASS] readiness reports Degraded while Redis is down (honest signal)  (ready=Degraded)
+  [PASS] liveness still OK (app not crashed)  (live HTTP 200)
+  [PASS] ticket CREATE still succeeds while Redis is down (graceful degradation)  (HTTP 201)
+  [PASS] SLA still applied from Postgres (responseDueAt set, cache miss recomputed)  (dueAt=2026-10-04T14:57:08.4842252Z)
+  [PASS] reads served during outage (list from Postgres)  (HTTP 200)
+  [PASS] PostgreSQL: outage-period write persisted  (count=1)
+  restarting Redis (cache recovery)...
+  [PASS] readiness returns to Healthy after Redis recovery  (ready=Healthy)
+  [PASS] full write path restored after recovery (201)  (HTTP 201)
+
+[PASS] Redis outage -> reads degrade to Postgres -> recovers  (9 checks)
+

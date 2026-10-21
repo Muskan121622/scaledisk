@@ -1,0 +1,9 @@
+# Local-only compose override for verification when host port 5432 is already taken by a
+# natively-installed PostgreSQL. Compose merges these with docker-compose.yml.
+# Safe to delete; it changes nothing about how the stack runs in a clean environment.
+# (5433 was later taken too, by an unrelated `codeprep-db` container -> moved to 5434.
+#  In-stack traffic always uses postgres:5432 on the compose network, not this map.)
+services:
+  postgres:
+    ports:
+      - "5434:5432"

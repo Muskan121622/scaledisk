@@ -1,0 +1,14 @@
+﻿SET
+BEGIN
+SELECT 20
+docker : ERROR:  duplicate key value violates unique constraint 
+"IX_tenants_Slug"
+At line:1 char:168
++ ... ql -Raw)) | docker exec -i scaledesk-postgres psql -U scaledesk -d sc ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR:  duplica...X_tenants_Slug" 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DETAIL:  Key ("Slug")=(load-tenant-1) already exists.
+

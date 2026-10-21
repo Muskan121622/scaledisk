@@ -1,0 +1,84 @@
+# Kafka — apache/kafka:3.8.1 in single-node KRaft mode, same config shape as compose.
+# In-cluster there is no host-side tooling to satisfy, so the EXTERNAL listener from
+# compose is dropped; only the INTERNAL (kafka:9092) listener + controller remain.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+spec:
+  serviceName: kafka
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.8.1
+          ports:
+            - containerPort: 9092
+            - containerPort: 9093
+          env:
+            KAFKA_NODE_ID: "1"
+            KAFKA_PROCESS_ROLES: "broker,controller"
+            KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-0.kafka:9093"
+            KAFKA_LISTENERS: "INTERNAL://:9092,CONTROLLER://:9093"
+            KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:9092"
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT"
+            KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+            KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+            KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+            KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+            # StatefulSet data dir (compose used a docker volume at the same path).
+            KAFKA_LOG_DIRS: "/var/kafka-logs"
+          volumeMounts:
+            - name: data
+              mountPath: /var/kafka-logs
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 200m
+              memory: 768Mi
+            limits:
+              memory: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+---
+# Headless service gives the StatefulSet its pod DNS (kafka-0.kafka) for the
+# controller voter; the API connects through the `kafka` DNS name either way.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+spec:
+  clusterIP: None
+  selector:
+    app: kafka
+  ports:
+    - name: internal
+      port: 9092
+      targetPort: 9092
+    - name: controller
+      port: 9093
+      targetPort: 9093

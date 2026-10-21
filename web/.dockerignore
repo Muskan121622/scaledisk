@@ -1,0 +1,7 @@
+# Keep the docker build context small: deps and local artifacts are rebuilt in-image.
+node_modules/
+dist/
+.env
+.env.*
+*.log
+.vscode/

@@ -1,0 +1,137 @@
+# ScaleDesk CI/CD — the automated delivery pipeline (spec §34, and a core DevOps skill).
+# On every push/PR it builds the .NET API + React app, runs the test suites, and
+# security-scans the source. On merges to `main` it also builds the container images
+# and publishes them to GitHub Container Registry (GHCR) — ready for the AKS cluster
+# to pull (Slice 2 wires the deploy-to-AKS job).
+#
+# Cost: GitHub Actions free tier (unlimited minutes for public repos, 2000 min/mo
+# private). GHCR has a free storage allowance. So: Rs0.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  NODE_VERSION: "20.x"
+  REGISTRY: ghcr.io
+
+jobs:
+  # ---- backend: build + unit & integration tests ----
+  backend:
+    name: Backend (.NET build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore ScaleDesk.sln
+      - name: Build
+        run: dotnet build ScaleDesk.sln -c Release --no-restore -warnaserror
+      # Integration tests are host-only (WebApplicationFactory, no Postgres/Kafka/Redis),
+      # so unit + integration run together here without a data plane.
+      - name: Test (unit + integration)
+        run: dotnet test ScaleDesk.sln -c Release --no-build --logger "trx;LogFileName=results.trx"
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+
+  # ---- frontend: typecheck + production build ----
+  frontend:
+    name: Frontend (tsc + vite build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build   # tsc -b && vite build
+
+  # ---- DevSecOps: scan source for secrets & vulnerable deps (free, aquasecurity/trivy) ----
+  security-scan:
+    name: Security scan (Trivy fs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          exit-code: "0"          # report-only for now; flip to "1" to enforce once baselined
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+  # ---- images: build + push to GHCR on main only ----
+  images:
+    name: Build & push container images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend, security-scan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # lets GITHUB_TOKEN push to GHCR
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image repo path (owner/repo-name)
+        id: paths
+        run: echo "base=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # API image (context = repo root, dockerfile path per existing Dockerfile)
+      - name: Build & push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/ScaleDesk.Api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.paths.outputs.base }}-api:${{ github.sha }}
+            ${{ steps.paths.outputs.base }}-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Web image (context = web/)
+      - name: Build & push Web
+        uses: docker/build-push-action@v6
+        with:
+          context: web
+          file: web/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.paths.outputs.base }}-web:${{ github.sha }}
+            ${{ steps.paths.outputs.base }}-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan API image (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.paths.outputs.base }}-api:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"          # report-only; flip to "1" to enforce as a release gate
+          ignore-unfixed: true

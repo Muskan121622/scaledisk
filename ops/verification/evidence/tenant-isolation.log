@@ -1,0 +1,22 @@
+== tenant-isolation : http://localhost:5102 ==
+  (rate-limited; waiting out the auth window, retry 1/6)
+  [PASS] two distinct tenants resolved  (A=c3e25e0f-9623-4a2b-b42f-c76d2bc40d27 B=7f73bc38-bdd6-4e77-ab71-89641a0a0e62)
+  [PASS] Acme resources captured (ticket/customer/sla/team)
+  [PASS] A GET B ticket -> blocked
+  [PASS] A PATCH B ticket status -> blocked
+  [PASS] A COMMENT on B ticket -> blocked
+  [PASS] A ASSIGN B ticket -> blocked
+  [PASS] A GET B customer -> blocked
+  [PASS] A UPDATE B customer -> blocked
+  [PASS] A DELETE B customer -> blocked
+  [PASS] A GET B team -> blocked
+  [PASS] A UPDATE B sla policy -> blocked
+  [PASS] A DELETE B sla policy -> blocked
+  [PASS] B ticket absent from A listing (EF filter)
+  [PASS] RLS: tenant A session cannot see B ticket row  (count=0)
+  [PASS] RLS positive control: tenant B sees its own ticket  (count=1)
+  [PASS] RLS: no tenant bound -> zero rows (default deny)  (count=0)
+  [PASS] control: superuser sees B ticket exists (blocks are meaningful)  (count=1)
+
+[PASS] Tenant isolation (EF filter + RLS)  (17 checks)
+

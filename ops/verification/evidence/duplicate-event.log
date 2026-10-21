@@ -1,0 +1,14 @@
+== duplicate-event : http://localhost:5102 ==
+  [PASS] ticket created + assigned (201/200)  (create=201 assign=200)
+  [PASS] baseline: consumer created 1 notification for the assign  (count=1)
+  [PASS] outbox row for the assignment has a stable event id  (id=22b7c9c7-c409-4f76-8a8c-741882f9aba6)
+  [PASS] dedup marker stored under the EVENT ID (evt:...) not the offset  (count=1)
+  re-emitted outbox row; waiting for it to be re-published + re-consumed...
+  [PASS] duplicate was re-published to Kafka (new delivery of same event id)
+  [PASS] consumer re-consumed the duplicate (group LAG back to 0)  (lag=0)
+  [PASS] NOTIFICATION applied EXACTLY ONCE despite the duplicate  (before=1 after=1)
+  [PASS] no second dedup marker recorded (idempotent skip)  (count=1)
+  duplicate re-delivered at a new offset; notification stayed at 1 (expected 1).
+
+[PASS] Duplicate event processed once (event-id idempotency)  (8 checks)
+

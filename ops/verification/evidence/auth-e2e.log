@@ -1,0 +1,14 @@
+== auth-e2e : http://localhost:5102 ==
+  [PASS] register returns 201 + tokens  (HTTP 201)
+  [PASS] login seeded user issues access+refresh
+  [PASS] refresh rotates: new pair issued, old superseded  (HTTP 200)
+  [PASS] reusing OLD refresh token is REJECTED (401)  (HTTP 401)
+  [PASS] family revoked: the NEW refresh token is ALSO dead after reuse (401)  (HTTP 401)
+  [PASS] invalid password -> 401 invalid_credentials  (HTTP 401)
+  [PASS] unknown user -> same 401 (no enumeration)  (HTTP 401)
+  ... waiting out the auth rate-limit window (62s) before lockout test ...
+  [PASS] 5 failed attempts trigger lockout
+  [PASS] correct password while locked -> 423  (HTTP 423)
+
+[PASS] Authentication lifecycle  (9 checks)
+

@@ -1,0 +1,74 @@
+# API — deliberately 1 replica (documented limitation, see k8s/README.md):
+# AutoMigrate=true runs EF migrations + DbSeeder at startup; two pods racing on the same
+# migration set is a real failure mode, and the outbox dispatcher + Kafka consumer group
+# were built single-process. Scale path for later: InitJob for migrations + replica>1.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # avoid two pods migrating/seed-ing during a rollout
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: scaledesk-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: scaledesk-config
+          env:
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: scaledesk-secret
+                  key: jwt-secret-key
+          # First-ever boot runs the full migration set + seed; 60s x 5 = 5min budget.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 8080
+      targetPort: 8080

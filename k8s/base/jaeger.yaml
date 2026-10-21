@@ -1,0 +1,50 @@
+# Jaeger all-in-one (OTLP collector + query + UI), same image and flag as compose.
+# The UI (16686) is cluster-internal only; reach it with `kubectl port-forward`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:latest
+          env:
+            COLLECTOR_OTLP_ENABLED: "true"
+          ports:
+            - containerPort: 4317   # OTLP gRPC (api exports here)
+            - containerPort: 16686  # Jaeger UI
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 16686
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: ui
+      port: 16686
+      targetPort: 16686

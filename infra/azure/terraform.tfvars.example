@@ -1,0 +1,11 @@
+# Copy this file to `terraform.tfvars` and fill in YOUR values, then run terraform.
+# (terraform.tfvars is git-ignored so your email never gets committed.)
+
+notify_email      = "you@example.com"   # <- REQUIRED: where budget alerts go
+monthly_budget_usd = 15                 # authorize ~Rs1,300/mo; alert at 50% & 100%
+
+location          = "centralindia"      # Pune; change to westus2 if you prefer
+aks_vm_size       = "Standard_B2ms"     # cheap single node; DS2_v2 for more headroom
+project           = "scaledesk"
+env               = "demo"
+owner_tag         = "me"

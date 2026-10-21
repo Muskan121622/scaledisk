@@ -1,0 +1,10 @@
+# Terraform local artifacts — NEVER commit these.
+# terraform.tfstate can contain secrets; terraform.tfvars contains your email/ids.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+crash.log
+override.tf
+override.tf.json

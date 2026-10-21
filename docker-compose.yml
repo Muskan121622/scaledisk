@@ -1,0 +1,143 @@
+# ScaleDesk local environment.
+#   docker compose up -d
+# Brings up the data plane + API so the project is reproducible from a clean clone (spec §33).
+# Kafka/Redis are provisioned now but only wired into the API in later stages (SLA engine, outbox,
+# notifications) — they are here so the platform is ready for those capabilities, not decorative.
+
+name: scaledesk
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scaledesk-postgres
+    environment:
+      POSTGRES_DB: scaledesk
+      POSTGRES_USER: scaledesk
+      POSTGRES_PASSWORD: scaledesk
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scaledesk -d scaledesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: scaledesk-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  kafka:
+    # Official Apache Kafka image (bitnami/kafka tags were removed from Docker Hub).
+    # KRaft single node, no ZooKeeper. apache/kafka maps KAFKA_FOO_BAR -> foo.bar server property.
+    # Dual listeners: INTERNAL (kafka:9092) for the API + kafka-ui on the compose network, EXTERNAL
+    # (localhost:29092) for host-side tooling.
+    image: apache/kafka:3.8.1
+    container_name: scaledesk-kafka
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:29092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:9092,EXTERNAL://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    ports:
+      - "29092:29092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: scaledesk-kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    ports:
+      - "8085:8080"
+
+  jaeger:
+    # Single-node trace backend. All-in-one bundles collector+query+UI; OTLP enabled on 4317 (grpc)
+    # and 4318 (http). UI on :16686. Chosen over grafana/otel-lgtm for image size / pull speed.
+    image: jaegertracing/all-in-one:latest
+    container_name: scaledesk-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+
+  api:
+    build:
+      context: .
+      dockerfile: src/ScaleDesk.Api/Dockerfile
+    container_name: scaledesk-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=scaledesk;Username=scaledesk_app;Password=scaledesk_app_pw"
+      # Migrations/DDL run as the owner (a least-privilege role can't create tables/policies/roles);
+      # all runtime traffic uses scaledesk_app above, where PostgreSQL RLS is actually enforced.
+      ConnectionStrings__PostgresMigrator: "Host=postgres;Port=5432;Database=scaledesk;Username=scaledesk;Password=scaledesk"
+      ConnectionStrings__Redis: "redis:6379"
+      Jwt__SecretKey: "change-me-in-prod-this-is-a-dev-only-32byte-secret!!"
+      Database__AutoMigrate: "true"
+      # Outbox -> Kafka dispatcher polls the broker over the internal composer network.
+      Kafka__Enabled: "true"
+      Kafka__BootstrapServers: "kafka:9092"
+      Kafka__ConsumerGroup: "scaledesk-notifications"
+      # SLA breach scanner escalates overdue tickets inside the container too.
+      Sla__Enabled: "true"
+      Sla__IntervalSeconds: "30"
+      # Distributed cache (SLA policy snapshots etc.) over the shared Redis instance.
+      Redis__Enabled: "true"
+      Redis__ConnectionString: "redis:6379"
+      # OpenTelemetry traces -> Jaeger over the shared compose network (OTLP gRPC).
+      Otel__Enabled: "true"
+      Otel__Endpoint: "http://jaeger:4317"
+    ports:
+      - "8080:8080"
+    # Probes the process liveness endpoint (curl ships in the runtime image). start_period gives
+    # the app room to run migrations + seed before orchestrators consider a failure real.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  postgres-data:
+  redis-data:
+  kafka-data:

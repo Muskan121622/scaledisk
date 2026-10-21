@@ -1,0 +1,24 @@
+# Single entry point: scaledesk.local -> web (nginx), which proxies /api /hubs /health
+# to the api Service in-cluster. Websocket annotations keep the SignalR hub upgrade working.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scaledesk
+  annotations:
+    nginx.ingress.kubernetes.io/ws-proxy: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: scaledesk.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

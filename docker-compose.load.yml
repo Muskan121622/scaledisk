@@ -1,0 +1,18 @@
+# Stage 5D load-testing override. Applied on top of the base + local port override:
+#   docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.load.yml up -d --build api
+#
+# Why these specific overrides (see ops/load/README.md for the full methodology):
+#   - Rate limits are lifted so the run measures the RAW BACKEND (Postgres/Kafka/outbox/cache), not the
+#     guardrails. The production defaults (300/min global, 10/min auth) are proven by the 5C suite and are
+#     left untouched in appsettings.json; this profile only exists for load measurement.
+#   - The JWT access-token lifetime is extended so pooled tokens do not expire mid-ramp (a ramp runs many
+#     minutes; the prod 15-min TTL would turn healthy responses into spurious 401s and skew error-rate).
+#   - OTel export is disabled so tracing/instrumentation overhead does not distort p50/p95/p99.
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: LoadTesting
+      RateLimiting__GlobalPermitPerMinute: "1000000"
+      RateLimiting__AuthPermitPerMinute: "1000000"
+      Authentication__AccessTokenMinutes: "600"
+      Otel__Enabled: "false"

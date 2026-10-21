@@ -1,0 +1,52 @@
+## .NET / build artifacts
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+.vs/
+
+## NuGet
+*.nupkg
+packages/
+!**/packages/build/
+
+## Test / coverage results
+[Tt]est[Rr]esult*/
+*.coverage
+coverage*.json
+coverage*.xml
+coverage*.info
+
+## IDE
+.idea/
+*.swp
+
+## Secrets & local config — never commit real credentials (spec §42)
+*.pfx
+appsettings.*.local.json
+.env
+.env.*
+!.env.example
+
+## OneDrive / OS
+Thumbs.db
+desktop.ini
+
+## Node (frontend stage)
+node_modules/
+dist/
+.vite/
+
+## Local runtime noise (ops/ evidence logs are kept intentionally)
+/logs/
+/src/ScaleDesk.Api/logs/
+/src/ScaleDesk.Api/api.out.log
+/src/ScaleDesk.Api/api.err.log
+/web/install.log
+/host-api.err
+/host-api.out
+/api-5c.err.log
+/api-5c.out.log

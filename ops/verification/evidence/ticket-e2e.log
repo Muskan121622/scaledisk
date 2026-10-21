@@ -1,0 +1,15 @@
+== ticket-e2e : http://localhost:5102 ==
+  [PASS] automation rule created (High -> Urgent)  (HTTP 201)
+  [PASS] ticket created (201) with id + correlation/trace id  (trace=7eda94e139cdc1273b652538d53ec99a)
+  [PASS] PostgreSQL: ticket row persisted  (count=1)
+  [PASS] Kafka consumer ran AUTOMATION: priority escalated High->Urgent  (now=3)
+  [PASS] Outbox: ticket.created event published to Kafka
+  [PASS] Outbox: no ticket events left unpublished  (pending=0)
+  [PASS] Kafka: ticket.created consumed (processed_messages marker)  (count=1)
+  [PASS] ticket assigned to agent (200)  (HTTP 200)
+  [PASS] Kafka consumer created NOTIFICATION for assignee
+  [PASS] final ticket state durable (assignee set, status advanced)  (assignee=4be3a344-ea40-47fe-9b02-5e6787281c60)
+  trace/correlation id for this journey: 7eda94e139cdc1273b652538d53ec99a  (searchable in Jaeger :16686)
+
+[PASS] Ticket journey (DB->Outbox->Kafka->Automation->Notification)  (10 checks)
+

@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ScaleDesk Design System — navy + violet, per user reference
+   Dark navy landing/sidebar, clean white app surfaces, violet→indigo accent.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 255 100% 97%;
+    --secondary-foreground: 262 60% 30%;
+    --muted: 250 40% 96%;
+    --muted-foreground: 240 8% 45%;
+    --accent: 262 83% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 248 35% 91%;
+    --input: 248 35% 91%;
+    --ring: 262 83% 58%;
+    --radius: 1rem;
+
+    /* Custom tokens */
+    --brand-violet: 262 83% 58%;
+    --brand-purple: 258 90% 66%;
+    --brand-indigo: 239 84% 67%;
+    --navy-950: #0a0d22;
+    --navy-900: #10142e;
+    --navy-800: #181d3f;
+    --glass-bg: 0 0% 100% / 0.72;
+    --glass-border: 222 47% 11% / 0.07;
+    --gradient-start: #7c3aed;
+    --gradient-mid: #8b5cf6;
+    --gradient-end: #6366f1;
+  }
+
+  /* Theme is light-only for app surfaces; landing uses explicit navy classes. */
+  .dark {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 255 100% 97%;
+    --secondary-foreground: 262 60% 30%;
+    --muted: 250 40% 96%;
+    --muted-foreground: 240 8% 45%;
+    --accent: 262 83% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 248 35% 91%;
+    --input: 248 35% 91%;
+    --ring: 262 83% 58%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* Flat: no decorative radial washes behind the app. */
+    background: hsl(var(--background));
+  }
+  ::selection { @apply bg-primary/15 text-foreground; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(250 20% 80%); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(250 18% 68%); }
+}
+
+@layer components {
+  /* Light glass surface — subtle, used sparingly */
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    box-shadow: 0 8px 30px rgba(2, 6, 23, 0.06);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(22px) saturate(1.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 16px 50px rgba(2, 6, 23, 0.10);
+  }
+
+  /* Card surface for app screens */
+  .surface {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px rgba(2, 6, 23, 0.04), 0 8px 24px rgba(2, 6, 23, 0.05);
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+  }
+
+  .text-gradient-warm {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, #a78bfa 0%, #8b5cf6 50%, #6366f1 100%);
+  }
+
+  /* Soft accent shadow for elevated/primary elements */
+  .shadow-brand {
+    box-shadow: 0 10px 30px -8px rgba(124, 58, 237, 0.40);
+  }
+
+  /* 3D perspective container */
+  .perspective-1000 { perspective: 1000px; }
+  .perspective-1500 { perspective: 1500px; }
+  .preserve-3d { transform-style: preserve-3d; }
+
+  /* Floating animation */
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-float-delayed { animation: float 6s ease-in-out infinite; animation-delay: -3s; }
+
+  /* Pulse ring */
+  .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+}
+
+@layer utilities {
+  /* Deep navy backdrop for landing + sidebar.
+     Navy base with teal/cyan as the dominant second colour (centre-left glow),
+     a faint violet hint along the top edge, and a subtle grid — matching the reference.
+     Ends on --navy-950 so it meets the solid below-the-fold ground with no seam. */
+  .bg-navy {
+    background-color: var(--navy-950);
+    background-image:
+      /* faint grid */
+      linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+      /* teal glow, centre-left — the dominant second colour */
+      radial-gradient(ellipse 70% 65% at 30% 50%, rgba(34, 211, 238, 0.34) 0%, transparent 65%),
+      /* violet hint, top edge only */
+      radial-gradient(ellipse 90% 26% at 50% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+      /* navy vertical base */
+      linear-gradient(180deg, #0d1128 0%, var(--navy-950) 60%, var(--navy-950) 100%);
+    background-size: 44px 44px, 44px 44px, 100% 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+  }
+
+  /* Soft mesh gradient for light hero sections */
+  .bg-mesh {
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 90%, rgba(139, 92, 246, 0.07) 0%, transparent 50%),
+      linear-gradient(180deg, #ffffff 0%, hsl(var(--background)) 100%);
+  }
+
+  /* Dot grid */
+  .bg-dots {
+    background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Orbs (soft colour washes, not neon) */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+}
+
+/* Keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

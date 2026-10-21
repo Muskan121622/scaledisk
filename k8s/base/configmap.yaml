@@ -1,0 +1,28 @@
+# Non-secret API configuration — env-var parity with docker-compose.yml's `api` service,
+# with hosts swapped to in-cluster Service DNS names. The api Deployment loads it via envFrom.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scaledesk-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  ASPNETCORE_URLS: "http://+:8080"
+  # Runtime traffic uses scaledesk_app (RLS-enforced, no BYPASSRLS); DDL runs as the
+  # owner via PostgresMigrator — the LeastPrivilegeAppRole migration creates the role.
+  ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=scaledesk;Username=scaledesk_app;Password=scaledesk_app_pw"
+  ConnectionStrings__PostgresMigrator: "Host=postgres;Port=5432;Database=scaledesk;Username=scaledesk;Password=scaledesk"
+  ConnectionStrings__Redis: "redis:6379"
+  Database__AutoMigrate: "true"
+  # Outbox -> Kafka dispatcher (single api replica runs the in-process consumer group).
+  Kafka__Enabled: "true"
+  Kafka__BootstrapServers: "kafka:9092"
+  Kafka__ConsumerGroup: "scaledesk-notifications"
+  # SLA breach scanner.
+  Sla__Enabled: "true"
+  Sla__IntervalSeconds: "30"
+  # Distributed cache.
+  Redis__Enabled: "true"
+  Redis__ConnectionString: "redis:6379"
+  # OpenTelemetry traces -> in-cluster Jaeger (OTLP gRPC).
+  Otel__Enabled: "true"
+  Otel__Endpoint: "http://jaeger:4317"

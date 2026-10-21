@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 220" role="img" aria-label="Event flow: Ticket created → Rule matches → Assigned → SLA timer → Agent replies → Customer notified → Resolved">
+  <defs>
+    <linearGradient id="edge" x1="0" x2="1">
+      <stop offset="0" stop-color="#7c5cff" stop-opacity="0.15"/>
+      <stop offset="0.5" stop-color="#7c5cff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0.9"/>
+    </linearGradient>
+    <style>
+      .node { fill: #0f0f14; stroke: #7c5cff; stroke-width: 1.5; }
+      .label { font: 600 13px ui-sans-serif, system-ui, sans-serif; fill: #eaeaf2; }
+      .sub   { font: 400 10px ui-monospace, SFMono-Regular, monospace; fill: #8a8aa3; }
+      .edge  { stroke: url(#edge); stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      @keyframes dash { to { stroke-dashoffset: -60; } }
+      .edge { stroke-dasharray: 6 6; animation: dash 2.4s linear infinite; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#22d3ee"/>
+    </marker>
+  </defs>
+
+  <rect width="1080" height="220" fill="#08080c"/>
+
+  <!-- 7 nodes across 1080px, evenly spaced -->
+  <g transform="translate(30 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Ticket created</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">POST /tickets</text>
+  </g>
+  <path class="edge" d="M150,120 L180,120"/>
+
+  <g transform="translate(180 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Rule matches</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">outbox → Kafka</text>
+  </g>
+  <path class="edge" d="M300,120 L330,120"/>
+
+  <g transform="translate(330 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Assigned</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">to Billing team</text>
+  </g>
+  <path class="edge" d="M450,120 L480,120"/>
+
+  <g transform="translate(480 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">SLA timer</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">respond ≤ 15m</text>
+  </g>
+  <path class="edge" d="M600,120 L630,120"/>
+
+  <g transform="translate(630 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Agent replies</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">first response</text>
+  </g>
+  <path class="edge" d="M750,120 L780,120"/>
+
+  <g transform="translate(780 90)">
+    <rect class="node" width="120" height="60" rx="10"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Notified</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">SignalR live push</text>
+  </g>
+  <path class="edge" d="M900,120 L930,120"/>
+
+  <g transform="translate(930 90)">
+    <rect class="node" width="120" height="60" rx="10" stroke="#22d3ee"/>
+    <text class="label" x="60" y="26" text-anchor="middle">Resolved</text>
+    <text class="sub"   x="60" y="45" text-anchor="middle">audit trail closed</text>
+  </g>
+
+  <!-- caption strip -->
+  <text class="sub" x="540" y="195" text-anchor="middle" fill="#8a8aa3">
+    Same pipeline on the landing page animates. Every hop is a real component: EF transaction → outbox dispatcher → Kafka topic → rule consumer → SignalR hub.
+  </text>
+</svg>

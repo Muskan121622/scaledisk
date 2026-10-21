@@ -1,0 +1,15 @@
+== kafka-failure : http://localhost:5102 ==
+  stopping Kafka (simulating a broker outage)...
+  [PASS] Kafka container is DOWN  (state=unhealthy)
+  [PASS] ticket CREATE still succeeds while Kafka is down (201)  (HTTP 201)
+  [PASS] app still serves (health/live + read your write) during outage  (live=200 read=200)
+  [PASS] PostgreSQL: ticket persisted during outage (no data loss)  (count=1)
+  [PASS] Outbox: event buffered as PENDING during outage  (pending=1)
+  restarting Kafka (broker recovery)...
+  [PASS] Kafka container is HEALTHY again  (state=healthy)
+  [PASS] Outbox drained the buffered event to Kafka after recovery
+  [PASS] Outbox: nothing left pending after recovery (zero loss)  (pending=0)
+  [PASS] Kafka consumer processed the recovered event (projection ran downstream)  (event=ae536c54-3a5b-4575-9160-ca3cc546a622)
+
+[PASS] Kafka outage -> outbox buffers -> drains on recovery  (9 checks)
+
